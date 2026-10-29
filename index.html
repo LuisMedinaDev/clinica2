@@ -1,0 +1,1418 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historia Clínica Digital · Hospital de Clínicas San Jorge</title>
+<style>
+  :root{
+    --ink:#12232e;
+    --ink-soft:#4a5b66;
+    --line:#c9d6dd;
+    --line-strong:#9db0ba;
+    --accent:#0b6b6b;
+    --accent-soft:#e6f2f2;
+    --paper:#ffffff;
+    --bg:#eef2f5;
+    --warn:#8a5300;
+    --warn-bg:#fff6e5;
+    --crit:#a4231f;
+    --crit-bg:#fdecea;
+    --ok:#1c6b3f;
+    --radius:10px;
+    --font:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --sb-w:296px;          /* ancho de la barra lateral */
+    --sb-gap:16px;         /* separación barra ↔ hoja */
+    --sb-pad:14px;         /* margen lateral de la página */
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font); background:var(--bg); color:var(--ink);
+    font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  .hidden{display:none !important}
+
+  /* ================= Barra superior ================= */
+  .appbar{
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:9px 14px; background:#0f3d3d; color:#eaf6f6;
+    box-shadow:0 1px 8px rgba(0,0,0,.25);
+  }
+  .appbar .brand{font-weight:600; margin-right:auto; display:flex; align-items:center; gap:8px; font-size:13px}
+  .appbar .brand small{font-weight:400; opacity:.72; font-size:10.5px; display:block; letter-spacing:0}
+  .brand-mark{width:27px;height:27px;border-radius:7px;background:#eaf6f6;color:#0f3d3d;display:grid;place-items:center;font-weight:700;font-size:11.5px}
+  .appbar button{
+    font:inherit; font-size:12.5px; padding:6px 11px; border-radius:8px; cursor:pointer;
+    border:1px solid rgba(255,255,255,.26); background:rgba(255,255,255,.07); color:#eaf6f6;
+    transition:background .15s, border-color .15s;
+  }
+  .appbar button:hover{background:rgba(255,255,255,.16)}
+  .appbar button.primary{background:#2fa3a3; border-color:#2fa3a3; color:#04211f; font-weight:600}
+  .appbar button.primary:hover{background:#3ab8b8}
+  #save-status{font-size:11px; opacity:.65; min-width:0; text-align:right}
+  #save-status:empty{display:none}
+  @media (max-width:1180px){
+    .appbar .brand small{display:none}
+    .appbar .brand{font-size:12.5px}
+  }
+
+  /* ================= Hoja ================= */
+  .sheet{
+    max-width:210mm; margin:18px auto 60px; background:var(--paper);
+    padding:16mm 14mm 18mm; border-radius:var(--radius);
+    box-shadow:0 2px 18px rgba(18,35,46,.13);
+  }
+  .doc-head{display:flex; gap:12px; align-items:center; padding-bottom:6px}
+  .logo{width:52px;height:52px;flex:0 0 auto;border:2px solid var(--accent);border-radius:8px;display:grid;place-items:center;color:var(--accent);font-weight:700;font-size:14px}
+  .doc-head .doc-title{flex:1 1 auto; min-width:0}
+  .doc-head h1{font-size:15px; margin:0 0 2px; font-weight:700; line-height:1.25}
+  .doc-head .sub{font-size:10.5px; color:var(--ink-soft); margin:0}
+  .doc-meta{
+    display:flex; flex-wrap:wrap; align-items:baseline; justify-content:flex-end; gap:6px 22px;
+    margin-top:2px; padding:6px 0 7px; border-top:1px dotted var(--line);
+    border-bottom:2px solid var(--accent);
+  }
+  .doc-meta .f{flex:0 1 auto}
+  .doc-meta .f > label{font-size:9px}
+  .doc-meta .f > input{width:124px; min-width:0}
+  .doc-meta .folio{font-weight:600}
+
+  /* ================= Secciones ================= */
+  section{margin-top:15px; break-inside:avoid-page}
+  h2{
+    font-size:11.5px; text-transform:uppercase; letter-spacing:.9px; color:var(--accent);
+    font-weight:700; margin:0 0 8px; padding-bottom:4px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:8px;
+  }
+  h2 .num{background:var(--accent); color:#fff; border-radius:5px; width:18px;height:18px;display:grid;place-items:center;font-size:10.5px;letter-spacing:0;flex:0 0 auto}
+  h2 .opt{font-size:9px; color:var(--ink-soft); letter-spacing:.4px; text-transform:none; font-weight:400}
+
+  .grid{display:grid; gap:6px 18px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .g4{grid-template-columns:1fr 1fr 1fr 1fr}
+  .span2{grid-column:span 2}
+
+  .f{display:flex; align-items:baseline; gap:6px; min-width:0}
+  .f > label{font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-soft); font-weight:600; white-space:nowrap}
+  .f > input, .f > select{
+    font:inherit; color:var(--ink); border:0; border-bottom:1px dotted var(--line-strong);
+    background:transparent; padding:2px 3px 3px; width:100%; min-width:0; border-radius:2px 2px 0 0;
+  }
+  .f > input:focus, .f > select:focus{outline:none; border-color:var(--accent); background:var(--accent-soft)}
+  .f > input[readonly]{border-bottom-style:solid; border-color:var(--line); color:var(--accent); font-weight:600}
+  .f > select{appearance:none; cursor:pointer}
+  .f.stack{flex-direction:column; align-items:stretch; gap:3px}
+  .f.stack > textarea{
+    font:inherit; color:var(--ink); border:1px solid var(--line); border-radius:6px;
+    padding:6px 8px; resize:vertical; min-height:54px; width:100%;
+  }
+  .f.stack > textarea:focus{outline:none; border-color:var(--accent); background:var(--accent-soft)}
+  .f.req > label::after{content:" *"; color:var(--crit)}
+  .f.invalid > input, .f.invalid > select, .f.invalid > textarea{border-color:var(--crit); background:var(--crit-bg)}
+
+  .checks{display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:4px}
+  .checks label{display:inline-flex; align-items:center; gap:5px; font-size:12px}
+  .checks input{accent-color:var(--accent); width:13px; height:13px; margin:0}
+  .hint{font-size:10.5px; color:var(--ink-soft)}
+  .sub-title{font-size:9.5px; text-transform:uppercase; letter-spacing:.7px; color:var(--ink-soft); font-weight:700; margin:0 0 6px}
+
+  /* ================= Alertas ================= */
+  .alerts{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; min-height:0}
+  .chip{
+    font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px;
+    border:1px solid transparent; display:inline-flex; align-items:center; gap:5px;
+  }
+  .chip.warn{background:var(--warn-bg); color:var(--warn); border-color:#edd9b0}
+  .chip.crit{background:var(--crit-bg); color:var(--crit); border-color:#f3c4c0}
+  .chip.ok{background:#e8f5ec; color:var(--ok); border-color:#bfe0ca}
+
+  /* ================= Tablas ================= */
+  table{width:100%; border-collapse:collapse; font-size:12.5px}
+  th,td{border:1px solid var(--line); padding:3px 5px; text-align:left; vertical-align:middle}
+  th{background:#f2f7f8; font-size:9.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-soft); font-weight:700}
+  td input, td textarea{font:inherit; border:0; background:transparent; width:100%; padding:3px 2px; color:var(--ink)}
+  td input:focus, td textarea:focus{outline:none; background:var(--accent-soft); border-radius:3px}
+  td textarea{resize:vertical; min-height:38px}
+  .col-narrow{width:84px}
+  .col-mid{width:118px}
+  .row-actions{width:34px; text-align:center}
+  tr.dup td{background:#fff8f8}
+
+  button.icon{border:1px solid var(--line); background:#fff; color:var(--ink-soft); border-radius:6px; width:24px;height:24px; cursor:pointer; line-height:1; font-size:14px; padding:0}
+  button.icon:hover{border-color:var(--crit); color:var(--crit)}
+  button.ghost{font:inherit; font-size:12px; padding:5px 10px; border-radius:7px; cursor:pointer; border:1px dashed var(--line-strong); background:#fbfcfc; color:var(--accent); font-weight:600}
+  button.ghost:hover{background:var(--accent-soft); border-color:var(--accent)}
+
+  /* ================= Adjuntos ================= */
+  .att-list{display:grid; gap:6px; margin-top:8px}
+  .att{
+    display:flex; align-items:center; gap:10px; padding:7px 10px;
+    border:1px solid var(--line); border-radius:8px; background:#fbfcfc;
+  }
+  .att .ext{
+    width:32px;height:32px;border-radius:6px;background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;font-size:9.5px;font-weight:700;letter-spacing:.4px;flex:0 0 auto;
+  }
+  .att b{font-size:12.5px; display:block; word-break:break-all}
+  .att span{font-size:10.5px; color:var(--ink-soft)}
+  .att .acts{margin-left:auto; display:flex; gap:6px}
+  .att .acts button{font:inherit;font-size:11.5px;padding:4px 9px;border-radius:6px;cursor:pointer;border:1px solid var(--line);background:#fff}
+  .att .acts button:hover{border-color:var(--accent);color:var(--accent)}
+  .att .acts button.del:hover{border-color:var(--crit);color:var(--crit)}
+
+  /* ================= Firmas ================= */
+  .footer-sign{margin-top:24px; display:grid; grid-template-columns:1fr 1fr; gap:26px; padding-top:14px; border-top:1px solid var(--line)}
+  .sign-line{border-top:1px solid var(--ink-soft); margin-top:32px; padding-top:4px; font-size:10.5px; color:var(--ink-soft); text-align:center}
+  .print-stamp{margin-top:14px; font-size:9.5px; color:#6b7a84; display:none; justify-content:space-between; border-top:1px dotted var(--line); padding-top:5px}
+
+  /* ================= UI flotante ================= */
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(12px);
+    background:#0f3d3d; color:#eaf6f6; padding:9px 16px; border-radius:999px; font-size:12.5px;
+    opacity:0; pointer-events:none; transition:all .22s ease; z-index:60; box-shadow:0 6px 20px rgba(0,0,0,.28);
+  }
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* ================= Barra lateral ================= */
+  /* El ancho total = barra + separación + hoja A4 (210 mm) + relleno, para que queden juntos. */
+  .layout{
+    display:flex; align-items:flex-start; gap:var(--sb-gap); margin:0 auto;
+    padding:0 var(--sb-pad);
+    max-width:calc(var(--sb-w) + var(--sb-gap) + 210mm + var(--sb-pad) * 2);
+  }
+  .layout > .sheet{flex:1 1 auto; min-width:0}
+  .sidebar{
+    position:sticky; top:64px; align-self:flex-start; flex:0 0 var(--sb-w); width:var(--sb-w);
+    max-height:calc(100vh - 72px); margin-top:18px; display:flex; flex-direction:column;
+    background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden;
+    box-shadow:0 2px 14px rgba(18,35,46,.07);
+  }
+  .sb-top{padding:11px 12px 10px; border-bottom:1px solid var(--line); background:#f8fbfb}
+  .sb-title{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:8px;
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.8px; color:var(--ink-soft); font-weight:700}
+  .sb-title span{font-weight:600; letter-spacing:0; text-transform:none; font-size:10.5px; color:var(--ink-soft)}
+  .sb-new{width:100%; font:inherit; font-size:12.5px; font-weight:600; padding:7px 10px; cursor:pointer;
+    border-radius:8px; border:1px solid var(--accent); background:var(--accent); color:#fff}
+  .sb-new:hover{filter:brightness(1.09)}
+  #sb-search{width:100%; margin-top:7px; font:inherit; font-size:12px; padding:6px 9px;
+    border:1px solid var(--line-strong); border-radius:8px; background:#fff; color:var(--ink)}
+  #sb-search:focus{outline:none; border-color:var(--accent)}
+  .sb-list{overflow:auto; padding:7px; flex:1 1 auto}
+  .pac{border:1px solid transparent; border-radius:9px; margin-bottom:2px}
+  .pac.open{border-color:var(--line); background:#fbfdfd}
+  .pac-head{display:block; width:100%; text-align:left; font:inherit; background:none; border:0;
+    padding:7px 8px; border-radius:8px; cursor:pointer}
+  .pac-head:hover{background:var(--accent-soft)}
+  .pac-nm{display:block; font-size:12.5px; font-weight:600; line-height:1.25; word-break:break-word}
+  .pac-meta{display:block; font-size:10.5px; color:var(--ink-soft); margin-top:2px}
+  .pac-body{display:none; padding:0 6px 6px}
+  .pac.open .pac-body{display:block}
+  .hist-new{width:100%; text-align:left; font:inherit; font-size:11.5px; color:var(--accent); cursor:pointer;
+    background:none; border:1px dashed var(--line-strong); border-radius:7px; padding:5px 8px; margin:2px 0 4px}
+  .hist-new:hover{background:var(--accent-soft); border-color:var(--accent)}
+  .hist{display:flex; align-items:center; gap:6px; border-top:1px dotted var(--line); padding:5px 2px}
+  .hist-main{flex:1 1 auto; min-width:0; text-align:left; font:inherit; background:none; border:0;
+    padding:2px 0; cursor:pointer}
+  .hist-main b{display:block; font-size:11.5px; font-weight:600; color:var(--ink)}
+  .hist-main span{display:block; font-size:10px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .hist-main:hover b{color:var(--accent)}
+  .hist.active .hist-main b{color:var(--accent)}
+  .hist.active{background:var(--accent-soft); border-radius:6px}
+  .hist-del{flex:0 0 auto; font:inherit; font-size:11px; line-height:1; border:1px solid var(--line);
+    background:#fff; color:var(--ink-soft); border-radius:6px; padding:3px 6px; cursor:pointer}
+  .hist-del:hover{border-color:var(--crit); color:var(--crit)}
+  .sb-empty{padding:16px 10px; text-align:center; font-size:11.5px; color:var(--ink-soft); line-height:1.55}
+
+  /* Portátiles angostos: la barra sigue fija, solo se reduce. */
+  @media (max-width:1180px){
+    :root{--sb-w:252px; --sb-gap:12px; --sb-pad:10px}
+    .g4{grid-template-columns:1fr 1fr}
+  }
+  /* Pantallas muy angostas (teléfono): la barra queda arriba, sin tapar el formulario. */
+  @media (max-width:760px){
+    .layout{display:block; padding:0}
+    .sidebar{position:static; width:auto; flex-basis:auto; max-height:none;
+      margin:12px 10px 0; border-radius:12px}
+    .sb-list{max-height:230px}
+    .layout > .sheet{margin:12px 10px 40px}
+  }
+  /* Pantallas medianas / teléfono: las tablas se encogen al ancho disponible. */
+  @media screen and (max-width:920px){
+    table{table-layout:fixed}
+    th{font-size:8.5px; letter-spacing:.2px}
+    th,td{padding:2px 3px}
+    .col-narrow{width:auto}
+    .col-mid{width:auto}
+    .row-actions{width:24px}
+    td input,td textarea{min-width:0}
+  }
+
+  /* ================= Impresión ================= */
+  @media print{
+    @page{size:A4; margin:12mm 12mm 14mm}
+    body{background:#fff; font-size:10.5px}
+    .appbar, .no-print, dialog, .toast, button{display:none !important}
+    .layout{display:block; padding:0; max-width:none}
+    .sidebar{display:none !important}
+    .sheet{box-shadow:none; margin:0; max-width:none; padding:0; border-radius:0}
+    section{break-inside:avoid}
+    .f > input, .f > select{border-bottom:1px solid #999}
+    .f.stack > textarea{border:1px solid #bbb; background:#fff}
+    h2{border-bottom:1px solid #999}
+    .print-stamp{display:flex}
+    th{background:#eef1f2 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+    .chip{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+    .f.invalid > input, .f.invalid > textarea{background:#fff; border-color:#999}
+    td input, td textarea{border:0; background:#fff}
+    input::placeholder, textarea::placeholder{color:transparent !important}
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator{display:none}
+    input[type="date"], input[type="time"]{color:#12232e}
+    input[type="date"].vacio, input[type="time"].vacio{color:transparent !important}
+    textarea{resize:none}
+    .sub-title{color:#555}
+    .f.req > label::after{content:""}
+  }
+  @media (max-width:760px){
+    .sheet{padding:14px; margin:10px; border-radius:8px}
+    .g2,.g3,.g4{grid-template-columns:1fr}
+    .span2{grid-column:span 1}
+    .footer-sign{grid-template-columns:1fr}
+    .doc-head{flex-wrap:wrap}
+    .doc-meta{justify-content:flex-start; gap:6px 16px}
+    #save-status{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="appbar no-print">
+  <div class="brand">
+    <div class="brand-mark">HC</div>
+    <div>Historia Clínica Digital
+      <small>Hospital de Clínicas San Jorge, S.A. · Danlí, El Paraíso</small>
+    </div>
+  </div>
+  <span id="save-status"></span>
+  <button id="btn-print" class="primary" title="Abre el diálogo de impresión: ahí eliges 'Guardar como PDF' (Ctrl+P)">Imprimir / PDF</button>
+  <button id="btn-word" title="Descarga un documento .doc que abre en Word">Word</button>
+  <button id="btn-save" title="Ctrl+S">Guardar</button>
+</header>
+
+<div class="layout">
+
+<aside class="sidebar no-print" id="sidebar" aria-label="Pacientes e historias">
+  <div class="sb-top">
+    <div class="sb-title">Pacientes <span id="sb-count"></span></div>
+    <button id="btn-new" class="sb-new" title="Crear una historia clínica nueva">＋ Nueva historia</button>
+    <input id="sb-search" type="search" placeholder="Buscar paciente por nombre…" autocomplete="off" aria-label="Buscar paciente por nombre">
+  </div>
+  <div class="sb-list" id="sb-list"></div>
+</aside>
+
+<main class="sheet" id="sheet">
+
+<div class="doc-head">
+    <div class="logo">HCSJ</div>
+    <div class="doc-title">
+      <h1>Hospital de Clínicas San Jorge, S.A.</h1>
+      <p class="sub"><b>Historia Clínica</b> · Tel. 762-1841</p>
+    </div>
+  </div>
+
+  <div class="doc-meta">
+    <div class="f folio"><label>Historia N°</label><input data-k="expediente" autocomplete="off"></div>
+    <div class="f"><label>Fecha</label><input data-k="fecha_ingreso" type="date"></div>
+  </div>
+
+  <input type="hidden" data-k="_id">
+  <input type="hidden" data-k="_paciente">
+
+  <!-- ================= I. DATOS GENERALES ================= -->
+  <section>
+    <h2><span class="num">I</span> Datos generales</h2>
+    <div class="grid g2">
+      <div class="f req span2" data-required><label>Nombre y apellido</label><input data-k="nombres" autocomplete="off"></div>
+      <div class="f"><label>Edad</label><input data-k="edad" inputmode="numeric"></div>
+      <div class="f"><label>Fecha de nacimiento</label><input data-k="fecha_nac" type="date"></div>
+    </div>
+    <div class="grid g3" style="margin-top:6px">
+      <div class="f"><label>Profesión</label><input data-k="ocupacion"></div>
+      <div class="f"><label>Empresa</label><input data-k="empresa"></div>
+      <div class="f"><label>Cargo propuesto</label><input data-k="cargo"></div>
+    </div>
+  </section>
+
+  <!-- ================= II. ANTECEDENTES ================= -->
+  <section>
+    <h2><span class="num">II</span> Antecedentes patológicos (médicos) – quirúrgicos – accidentes</h2>
+    <div class="f stack">
+      <textarea data-k="ant_patologicos" style="min-height:48px"></textarea>
+    </div>
+
+    <p class="sub-title" style="margin-top:12px">Hábitos</p>
+    <div class="grid g4">
+      <div class="f"><label>Cigarrillos</label><select data-k="tabaco"><option value=""></option><option>No</option><option>Sí</option></select></div>
+      <div class="f"><label>N.° al día</label><input data-k="tabaco_n" inputmode="numeric"></div>
+      <div class="f"><label>Edad en que comenzó</label><input data-k="tabaco_edad" inputmode="numeric"></div>
+      <div class="f"><label>Alcohol</label><select data-k="alcohol"><option value=""></option><option>No</option><option>Sí</option><option>Socialmente</option><option>A diario</option></select></div>
+      <div class="f"><label>Otras drogas</label><select data-k="drogas"><option value=""></option><option>No</option><option>Sí</option></select></div>
+      <div class="f"><label>Cuál</label><input data-k="drogas_cual"></div>
+      <div class="f"><label>Sueño: horas diarias</label><input data-k="sueno" inputmode="decimal"></div>
+      <div class="f"><label>Sueño</label><select data-k="sueno_ritmo"><option value=""></option><option>Normal</option><option>Irregular</option></select></div>
+      <div class="f span2"><label>Hobby</label><input data-k="hobby"></div>
+      <div class="f span2"><label>Actividad física – deportes</label><input data-k="actividad"></div>
+      <div class="f span2"><label>Dieta</label><input data-k="dieta"></div>
+    </div>
+  </section>
+
+  <!-- ================= III. FAMILIARES ================= -->
+  <section>
+    <h2><span class="num">III</span> Antecedentes familiares</h2>
+    <div class="grid g2">
+      <div class="f"><label>Padre</label><input data-k="fam_padre"></div>
+      <div class="f"><label>Madre</label><input data-k="fam_madre"></div>
+      <div class="f"><label>Hermanos / as</label><input data-k="fam_hermanos"></div>
+      <div class="f"><label>Consanguíneos (abuelos, tíos, primos)</label><input data-k="fam_consanguineos"></div>
+    </div>
+    <div class="checks" style="margin-top:8px">
+      <label><input type="checkbox" data-k="f_pulmonar"> Pulmonares</label>
+      <label><input type="checkbox" data-k="f_cancer"> Cáncer</label>
+      <label><input type="checkbox" data-k="f_dm"> Diabetes</label>
+      <label><input type="checkbox" data-k="f_cardio"> Cardiopatía</label>
+      <label><input type="checkbox" data-k="f_hta"> Hipertensión</label>
+      <label><input type="checkbox" data-k="f_malf"> Malformaciones congénitas</label>
+      <label><input type="checkbox" data-k="f_osteo"> E. osteomusculares</label>
+      <label><input type="checkbox" data-k="f_epilepsia"> Epilepsia</label>
+      <label><input type="checkbox" data-k="f_lues"> Lues</label>
+      <label><input type="checkbox" data-k="f_atopia"> Atopia</label>
+      <label><input type="checkbox" data-k="f_farmaco"> Farmacodependencia</label>
+      <label><input type="checkbox" data-k="f_mental"> Trastornos mentales</label>
+      <label><input type="checkbox" data-k="f_otros"> Otras</label>
+    </div>
+  </section>
+
+  <!-- ================= IV. OCUPACIONALES ================= -->
+  <section>
+    <h2><span class="num">IV</span> Antecedentes ocupacionales</h2>
+    <div class="f stack">
+      <textarea data-k="ocupacional" placeholder="Empresas, ocupación, riesgos, puesto de trabajo actual, protección personal y colectiva, ocupación extra empresa, servicio militar."></textarea>
+    </div>
+  </section>
+
+  <!-- ================= V. SIGNOS VITALES ================= -->
+  <section>
+    <h2><span class="num">V</span> Signos vitales</h2>
+    <table id="tbl-sv">
+      <thead>
+        <tr>
+          <th class="col-mid">Fecha</th>
+          <th class="col-narrow">Hora</th>
+          <th class="col-narrow">T/A (mmHg)</th>
+          <th class="col-narrow">Pulso (x')</th>
+          <th class="col-narrow">Resp. (x')</th>
+          <th class="col-narrow">Temp. (°C)</th>
+          <th class="col-narrow">SpO₂ (%)</th>
+          <th class="col-narrow">Peso (kg)</th>
+          <th>Firma</th>
+          <th class="row-actions no-print"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="alerts" id="alertas-sv"></div>
+    <div class="no-print" style="margin-top:8px">
+      <button class="ghost" data-add="sv">+ Agregar toma de signos vitales</button>
+    </div>
+  </section>
+
+  <!-- ================= VI. EVOLUCIÓN ================= -->
+  <section>
+    <h2><span class="num">VI</span> Evolución / notas médicas</h2>
+    <table id="tbl-evo">
+      <thead>
+        <tr>
+          <th class="col-mid">Fecha</th>
+          <th class="col-narrow">Hora</th>
+          <th>Nota de evolución</th>
+          <th class="col-mid">Responsable</th>
+          <th class="row-actions no-print"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="no-print" style="margin-top:8px">
+      <button class="ghost" data-add="evo">+ Agregar nota de evolución</button>
+    </div>
+  </section>
+
+  <!-- ================= VII. ENFERMERÍA ================= -->
+  <section>
+    <h2><span class="num">VII</span> Reporte de enfermería</h2>
+    <table id="tbl-enf">
+      <thead>
+        <tr>
+          <th class="col-mid">Fecha</th>
+          <th class="col-narrow">Turno</th>
+          <th>Reporte</th>
+          <th class="col-mid">Enfermera/o</th>
+          <th class="row-actions no-print"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="no-print" style="margin-top:8px">
+      <button class="ghost" data-add="enf">+ Agregar reporte de enfermería</button>
+    </div>
+  </section>
+
+  <!-- ================= VIII. ADJUNTOS ================= -->
+  <section class="no-print">
+    <h2><span class="num">VIII</span> Documentos adjuntos <span class="opt">— se guardan en este equipo, no se imprimen</span></h2>
+    <p class="hint" style="margin:0 0 6px">
+      Escaneo o foto de la hoja firmada, resultados de laboratorio, RX, consentimientos.
+      PDF, JPG o PNG · máximo 15 MB por archivo.
+    </p>
+    <button class="ghost" id="btn-attach">+ Adjuntar archivo</button>
+    <input type="file" id="file-attach" accept="application/pdf,image/*" multiple hidden>
+    <div class="att-list" id="att-list"></div>
+  </section>
+
+  <!-- ================= FIRMAS ================= -->
+  <div class="footer-sign">
+    <div>
+      <div class="f"><label>Médico responsable</label><input data-k="medico"></div>
+      <div class="f" style="margin-top:6px"><label>Colegiación</label><input data-k="colegiacion"></div>
+      <div class="sign-line">Firma y sello</div>
+    </div>
+    <div>
+      <div class="f"><label>Recibido por</label><input data-k="recibido_por"></div>
+      <div class="f" style="margin-top:6px"><label>Parentesco</label><input data-k="recibido_parentesco"></div>
+      <div class="sign-line">Firma del paciente / responsable</div>
+    </div>
+  </div>
+
+  <div class="print-stamp">
+    <span id="print-when">—</span>
+    <span>Historia Clínica · Hospital de Clínicas San Jorge, S.A.</span>
+  </div>
+
+</main>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const DRAFT = "hcsj.borrador.v1";
+  const STORE = "hcsj.historias.v1";
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+  const esc = (s) => String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  function uid(){
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  }
+
+  function num(v){
+    const n = parseFloat(String(v == null ? "" : v).replace(",", "."));
+    return isFinite(n) ? n : null;
+  }
+
+  /* ================= Toast ================= */
+  let toastTimer;
+  function toast(msg){
+    const t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("on"), 2200);
+  }
+
+  /* ================= Filas dinámicas ================= */
+  const ROW_TEMPLATES = {
+    sv: (d = {}) => `
+      <td><input data-col="fecha" type="date" value="${esc(d.fecha)}"></td>
+      <td><input data-col="hora" type="time" value="${esc(d.hora)}"></td>
+      <td><input data-col="ta" value="${esc(d.ta)}" placeholder="120/80"></td>
+      <td><input data-col="pulso" value="${esc(d.pulso)}"></td>
+      <td><input data-col="resp" value="${esc(d.resp)}"></td>
+      <td><input data-col="temp" value="${esc(d.temp)}"></td>
+      <td><input data-col="spo2" value="${esc(d.spo2)}"></td>
+      <td><input data-col="peso" value="${esc(d.peso)}"></td>
+      <td><input data-col="firma" value="${esc(d.firma)}"></td>
+      <td class="row-actions no-print"><button class="icon" data-del title="Eliminar fila">&times;</button></td>`,
+
+    evo: (d = {}) => `
+      <td><input data-col="fecha" type="date" value="${esc(d.fecha)}"></td>
+      <td><input data-col="hora" type="time" value="${esc(d.hora)}"></td>
+      <td><textarea data-col="nota" rows="2">${esc(d.nota)}</textarea></td>
+      <td><input data-col="responsable" value="${esc(d.responsable)}"></td>
+      <td class="row-actions no-print"><button class="icon" data-del title="Eliminar fila">&times;</button></td>`,
+
+    enf: (d = {}) => `
+      <td><input data-col="fecha" type="date" value="${esc(d.fecha)}"></td>
+      <td><input data-col="turno" value="${esc(d.turno)}" placeholder="Mat./Vesp./Noche"></td>
+      <td><textarea data-col="reporte" rows="2">${esc(d.reporte)}</textarea></td>
+      <td><input data-col="enfermera" value="${esc(d.enfermera)}"></td>
+      <td class="row-actions no-print"><button class="icon" data-del title="Eliminar fila">&times;</button></td>`
+  };
+  const TABLE_OF = { sv: "#tbl-sv", evo: "#tbl-evo", enf: "#tbl-enf" };
+
+  function addRow(kind, data){
+    const tbody = $(TABLE_OF[kind] + " tbody");
+    const tr = document.createElement("tr");
+    tr.innerHTML = ROW_TEMPLATES[kind](data);
+    tr.querySelector("[data-del]").addEventListener("click", () => {
+      tr.remove();
+      if (!tbody.rows.length) addRow(kind);
+      renderAlerts(); queueDraft();
+    });
+    tbody.appendChild(tr);
+    return tr;
+  }
+  function readTable(kind){
+    return Array.from($(TABLE_OF[kind] + " tbody").rows).map(tr => {
+      const o = {};
+      $$("[data-col]", tr).forEach(inp => { o[inp.dataset.col] = inp.value; });
+      return o;
+    }).filter(o => Object.values(o).some(v => String(v).trim() !== ""));
+  }
+  function clearTable(kind){ $(TABLE_OF[kind] + " tbody").innerHTML = ""; }
+
+  /* ================= Serialización ================= */
+  function collect(){
+    const f = {};
+    $$("[data-k]").forEach(el => {
+      if (el.type === "checkbox") f[el.dataset.k] = el.checked;
+      else if (el.type === "radio") { if (el.checked) f[el.dataset.k] = el.value; }
+      else f[el.dataset.k] = el.value;
+    });
+    return {
+      _v: 1,
+      _modificado: new Date().toISOString(),
+      campos: f,
+      signos: readTable("sv"),
+      evolucion: readTable("evo"),
+      enfermeria: readTable("enf")
+    };
+  }
+
+  function apply(data){
+    if (!data || typeof data !== "object") return;
+    const c = data.campos || {};
+    $$("[data-k]").forEach(el => {
+      const k = el.dataset.k;
+      if (!(k in c)) return;
+      if (el.type === "checkbox") el.checked = !!c[k];
+      else if (el.type === "radio") el.checked = (el.value === c[k]);
+      else el.value = c[k] == null ? "" : c[k];
+    });
+    [["sv","signos"],["evo","evolucion"],["enf","enfermeria"]].forEach(([kind, key]) => {
+      clearTable(kind);
+      const rows = Array.isArray(data[key]) ? data[key] : [];
+      if (rows.length) rows.forEach(r => addRow(kind, r)); else addRow(kind);
+    });
+    renderAlerts(); refreshAttachments();
+  }
+
+  function blank(){
+    $$("[data-k]").forEach(el => {
+      if (el.type === "checkbox" || el.type === "radio") el.checked = false;
+      else el.value = "";
+    });
+    $('[data-k="_id"]').value = uid();
+    clearTable("sv"); clearTable("evo"); clearTable("enf");
+    addRow("sv"); addRow("evo"); addRow("enf");
+    const hoy = new Date().toISOString().slice(0, 10);
+    $('[data-k="fecha_ingreso"]').value = hoy;
+    renderAlerts(); refreshAttachments();
+  }
+
+  /* ================= Autoguardado ================= */
+  let draftTimer, lastSaved = 0;
+  function setStatus(txt){ $("#save-status").textContent = txt; }
+  function saveDraft(){
+    try {
+      localStorage.setItem(DRAFT, JSON.stringify(collect()));
+      lastSaved = Date.now();
+      setStatus("Borrador guardado");
+    } catch(e){
+      setStatus("⚠ Sin espacio");
+    }
+  }
+  function queueDraft(){
+    setStatus("Editando…");
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(saveDraft, 350);
+  }
+
+  /* ================= Almacén ================= */
+  function loadStore(){
+    try { return JSON.parse(localStorage.getItem(STORE) || "{}") || {}; } catch(e){ return {}; }
+  }
+  function saveStore(o){
+    try { localStorage.setItem(STORE, JSON.stringify(o)); return true; }
+    catch(e){ toast("No hay espacio. Exporta y borra historias antiguas."); return false; }
+  }
+
+  /* ================= Adjuntos (IndexedDB) ================= */
+  const DB_NAME = "hcsj-adjuntos";
+  const DB_STORE = "archivos";
+
+  function openDB(){
+    return new Promise((res, rej) => {
+      if (!window.indexedDB) return rej(new Error("Sin IndexedDB"));
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(DB_STORE)) {
+          db.createObjectStore(DB_STORE, { keyPath: "pk", autoIncrement: true });
+        }
+      };
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+  function tx(mode, fn){
+    return openDB().then(db => new Promise((res, rej) => {
+      const t = db.transaction(DB_STORE, mode);
+      const store = t.objectStore(DB_STORE);
+      let out;
+      try { out = fn(store); } catch(e){ db.close(); return rej(e); }
+      t.oncomplete = () => { db.close(); res(out && out.result !== undefined ? out.result : out); };
+      t.onerror = () => { db.close(); rej(t.error); };
+    }));
+  }
+  const dbAdd    = (rec) => tx("readwrite", s => s.add(rec));
+  const dbAll    = ()    => tx("readonly",  s => s.getAll());
+  const dbDelete = (pk)  => tx("readwrite", s => s.delete(pk));
+  const dbClear  = ()    => tx("readwrite", s => s.clear());
+
+  function curId(){ return $('[data-k="_id"]').value || ""; }
+  function fmtSize(b){
+    if (b < 1024) return b + " B";
+    if (b < 1048576) return (b / 1024).toFixed(0) + " KB";
+    return (b / 1048576).toFixed(1) + " MB";
+  }
+  function extOf(name){
+    const m = /\.([a-z0-9]+)$/i.exec(name || "");
+    return m ? m[1].toUpperCase().slice(0, 4) : "FILE";
+  }
+
+  async function refreshAttachments(){
+    const box = $("#att-list");
+    if (!box) return;
+    const id = curId();
+    if (!id) { box.innerHTML = ""; return; }
+    let all = [];
+    try { all = (await dbAll()) || []; } catch(e) { return; }
+    const mine = all.filter(r => r.historiaId === id);
+    if (!mine.length) {
+      box.innerHTML = '<p class="hint" style="margin:2px 0">Sin archivos adjuntos.</p>';
+      return;
+    }
+    box.innerHTML = mine.map(r => `
+      <div class="att">
+        <div class="ext">${esc(extOf(r.name))}</div>
+        <div>
+          <b>${esc(r.name)}</b>
+          <span>${esc(fmtSize(r.size))} · ${esc((r.added || "").slice(0, 10))}</span>
+        </div>
+        <div class="acts">
+          <button data-open-att="${r.pk}">Abrir</button>
+          <button class="del" data-del-att="${r.pk}">Quitar</button>
+        </div>
+      </div>`).join("");
+
+    $$("[data-open-att]", box).forEach(b => b.addEventListener("click", async () => {
+      const pk = Number(b.dataset.openAtt);
+      const rec = (await dbAll()).find(x => x.pk === pk);
+      if (!rec) return;
+      const url = URL.createObjectURL(rec.blob);
+      const a = document.createElement("a");
+      a.href = url; a.target = "_blank"; a.rel = "noopener"; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }));
+    $$("[data-del-att]", box).forEach(b => b.addEventListener("click", async () => {
+      if (!confirm("¿Quitar este archivo de la historia?")) return;
+      await dbDelete(Number(b.dataset.delAtt));
+      refreshAttachments();
+    }));
+  }
+
+  $("#btn-attach").addEventListener("click", () => {
+    if (!curId()) { toast("Guarda la historia primero"); return; }
+    $("#file-attach").click();
+  });
+  $("#file-attach").addEventListener("change", async (e) => {
+    const files = Array.from(e.target.files || []);
+    const id = curId();
+    for (const f of files) {
+      if (f.size > 15 * 1024 * 1024) { toast("“" + f.name + "” supera 15 MB"); continue; }
+      try {
+        await dbAdd({ historiaId: id, name: f.name, size: f.size, type: f.type, added: new Date().toISOString(), blob: f });
+      } catch(err) { toast("No se pudo guardar el archivo"); }
+    }
+    e.target.value = "";
+    refreshAttachments();
+    if (files.length) toast(files.length === 1 ? "Archivo adjuntado" : files.length + " archivos adjuntados");
+  });
+
+  /* ================= Edad ================= */
+  function calcEdad(){
+    const v = $('[data-k="fecha_nac"]').value;
+    const out = $('[data-k="edad"]');
+    if (!v) return;
+    const n = new Date(v + "T00:00:00");
+    if (isNaN(n)) return;
+    const hoy = new Date();
+    let a = hoy.getFullYear() - n.getFullYear();
+    const m = hoy.getMonth() - n.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < n.getDate())) a--;
+    if (a >= 0 && a < 130) out.value = a;
+  }
+
+  /* ================= Alertas clínicas ================= */
+  function lastVal(rows, col){
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const v = String(rows[i][col] || "").trim();
+      if (v) return v;
+    }
+    return "";
+  }
+
+  function renderAlerts(){
+    const box = $("#alertas-sv");
+    const rows = readTable("sv");
+    const chips = [];
+
+    const ta = lastVal(rows, "ta").match(/(\d{2,3})\s*\/\s*(\d{2,3})/);
+    if (ta) {
+      const sys = +ta[1], dia = +ta[2];
+      if (sys >= 180 || dia >= 110) chips.push(["Crisis hipertensiva " + sys + "/" + dia, "crit"]);
+      else if (sys >= 140 || dia >= 90) chips.push(["Hipertensión " + sys + "/" + dia, "warn"]);
+      else if (sys < 90 || dia < 60) chips.push(["Hipotensión " + sys + "/" + dia, "warn"]);
+    }
+    const pul = num(lastVal(rows, "pulso"));
+    if (pul !== null) {
+      if (pul > 120) chips.push(["Taquicardia " + pul + " x'", "crit"]);
+      else if (pul > 100) chips.push(["Taquicardia " + pul + " x'", "warn"]);
+      else if (pul < 50) chips.push(["Bradicardia " + pul + " x'", "warn"]);
+    }
+    const fr = num(lastVal(rows, "resp"));
+    if (fr !== null) {
+      if (fr > 28) chips.push(["Taquipnea " + fr + " x'", "crit"]);
+      else if (fr > 20) chips.push(["Taquipnea " + fr + " x'", "warn"]);
+      else if (fr < 12) chips.push(["Bradipnea " + fr + " x'", "warn"]);
+    }
+    const t = num(lastVal(rows, "temp"));
+    if (t !== null) {
+      if (t >= 39) chips.push(["Fiebre alta " + t + " °C", "crit"]);
+      else if (t >= 38) chips.push(["Fiebre " + t + " °C", "warn"]);
+      else if (t < 35.5) chips.push(["Hipotermia " + t + " °C", "warn"]);
+    }
+    const sp = num(lastVal(rows, "spo2"));
+    if (sp !== null) {
+      if (sp < 90) chips.push(["Hipoxemia SpO₂ " + sp + "%", "crit"]);
+      else if (sp < 94) chips.push(["SpO₂ baja " + sp + "%", "warn"]);
+    }
+
+    box.innerHTML = chips.map(([txt, cls]) =>
+      `<span class="chip ${cls}">${esc(txt)}</span>`).join("");
+  }
+
+  /* ================= Eventos ================= */
+  document.addEventListener("input", (e) => {
+    const t = e.target;
+    if (t.matches("[data-k]") || t.matches("[data-col]")) queueDraft();
+    if (t.matches('[data-col="ta"], [data-col="pulso"], [data-col="resp"], [data-col="temp"], [data-col="spo2"]')) renderAlerts();
+  });
+
+  document.addEventListener("change", (e) => {
+    const t = e.target;
+    if (t.matches("[data-k]") || t.matches("[data-col]")) queueDraft();
+    if (t.matches('[data-k="fecha_nac"]')) { calcEdad(); queueDraft(); }
+  });
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-add]");
+    if (!b) return;
+    const tr = addRow(b.dataset.add);
+    const first = tr.querySelector("input, textarea");
+    if (first) first.focus();
+    queueDraft();
+    renderAlerts();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault();
+      doSave();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+      e.preventDefault();
+      window.print();
+    }
+  });
+
+  window.addEventListener("beforeprint", () => {
+    $$('input[type="date"], input[type="time"]').forEach(el => el.classList.toggle("vacio", !el.value));
+    const d = new Date();
+    $("#print-when").textContent = "Impreso: " +
+      d.toLocaleDateString("es-HN") + " " + d.toLocaleTimeString("es-HN", { hour: "2-digit", minute: "2-digit" });
+  });
+
+  /* ================= Guardar / validar ================= */
+  function validate(){
+    let ok = true;
+    $$("[data-required]").forEach(w => {
+      const el = w.querySelector("[data-k]");
+      const empty = !String(el.value || "").trim();
+      w.classList.toggle("invalid", empty);
+      if (empty && ok) { el.focus(); ok = false; }
+    });
+
+    const fn = $('[data-k="fecha_nac"]').value;
+    const fi = $('[data-k="fecha_ingreso"]').value;
+    if (fn && fi && fn > fi) {
+      alert("La fecha de nacimiento es posterior a la fecha de ingreso. Revisa las fechas.");
+      ok = false;
+    }
+    const edad = num($('[data-k="edad"]').value);
+    if (edad !== null && (edad < 0 || edad > 120)) {
+      alert("La edad debe estar entre 0 y 120 años.");
+      ok = false;
+    }
+    return ok;
+  }
+
+  function doSave(){
+    if (!validate()) { toast("Faltan datos obligatorios"); return; }
+    const data = collect();
+    const store = loadStore();
+    let key = data.campos._id || uid();
+    const exp = (data.campos.expediente || "").trim().toLowerCase();
+
+    if (exp) {
+      const dup = Object.keys(store).find(k =>
+        k !== key && String((store[k].campos || {}).expediente || "").trim().toLowerCase() === exp);
+      if (dup) {
+        const other = (store[dup].campos || {}).nombres || "sin nombre";
+        if (!confirm("Ya existe una historia con el expediente " + data.campos.expediente +
+                     " (" + other + ").\n\n¿Sobrescribirla con los datos actuales?")) return;
+        key = dup;
+        data.campos._id = dup;
+      }
+    }
+
+    const eraNueva = !store[key];
+    data._guardado = new Date().toISOString();
+    data.campos._paciente = vincularPaciente(data);
+    store[key] = data;
+    if (!saveStore(store)) return;
+    $('[data-k="_id"]').value = key;
+    $('[data-k="_paciente"]').value = data.campos._paciente;
+    saveDraft();
+
+    const nombre = data.campos.nombres || "sin nombre";
+    const hora = new Date().toLocaleTimeString("es-HN", { hour: "2-digit", minute: "2-digit" });
+    abiertos.add(data.campos._paciente);
+    $("#sb-search").value = "";
+
+    if (eraNueva) {
+      // Historia nueva: se archiva y el formulario queda limpio para la siguiente.
+      blank();
+      localStorage.removeItem(DRAFT);
+      renderPacientes();
+      setStatus("Guardada " + hora + " · lista la siguiente");
+      toast("Guardada: " + nombre + " — formulario limpio para la siguiente");
+    } else {
+      // Se estaba editando una historia existente: se queda abierta.
+      renderPacientes();
+      refreshAttachments();
+      setStatus("Actualizada " + hora);
+      toast("Historia actualizada: " + nombre);
+    }
+  }
+
+  $("#btn-save").addEventListener("click", doSave);
+  $("#btn-print").addEventListener("click", () => window.print());
+
+  /* ================= Pacientes e historias ================= */
+  const PACI = "hcsj.pacientes.v1";
+  let abiertos = new Set();
+
+  function normNombre(s){
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/\s+/g, " ").trim();
+  }
+  function uidPac(){
+    return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  function loadPac(){
+    try { return JSON.parse(localStorage.getItem(PACI) || "{}") || {}; } catch(e){ return {}; }
+  }
+  function savePac(o){
+    try { localStorage.setItem(PACI, JSON.stringify(o)); return true; }
+    catch(e){ toast("No hay espacio para guardar el índice de pacientes."); return false; }
+  }
+
+  // Asigna la historia a un paciente: reutiliza el que tenga el mismo nombre o crea uno.
+  function vincularPaciente(data){
+    const c = data.campos || {};
+    const nombre = String(c.nombres || "").trim();
+    const pac = loadPac();
+    let pid = c._paciente || "";
+
+    if (pid && !pac[pid]) pid = "";
+    if (!pid && nombre) {
+      const n = normNombre(nombre);
+      const cands = Object.keys(pac).filter(k => normNombre(pac[k].nombre) === n);
+
+      if (cands.length === 1) {
+        const store = loadStore();
+        const cuantas = Object.keys(store)
+          .filter(k => ((store[k].campos || {})._paciente || "") === cands[0]).length;
+        const misma = confirm(
+          "Ya existe un paciente llamado «" + nombre + "»" +
+          (cuantas ? " con " + cuantas + " historia" + (cuantas === 1 ? "" : "s") : "") + ".\n\n" +
+          "Aceptar: es la misma persona, esta historia se agrega a su expediente.\n" +
+          "Cancelar: es otra persona con el mismo nombre, se guarda por separado."
+        );
+        pid = misma ? cands[0] : "";
+      } else if (cands.length > 1) {
+        pid = "";   // varios pacientes con ese nombre: no adivinar
+      }
+    }
+    if (!pid) {
+      pid = uidPac();
+      pac[pid] = { id: pid, nombre: nombre || "Sin nombre", creado: new Date().toISOString() };
+    }
+    if (nombre && pac[pid].nombre !== nombre) pac[pid].nombre = nombre;
+    pac[pid].actualizado = new Date().toISOString();
+    c._paciente = pid;
+    savePac(pac);
+    return pid;
+  }
+
+  // Devuelve [{ id, nombre, historias:[{ key, data }] }] agrupado por paciente.
+  function agrupar(){
+    const store = loadStore();
+    const pac = loadPac();
+    const grupos = new Map();
+    let cambioStore = false;
+    let cambioPac = false;
+
+    Object.keys(store).forEach(k => {
+      const d = store[k] || {};
+      const c = d.campos || {};
+      let pid = c._paciente || "";
+
+      if (!pid || !pac[pid]) {
+        const n = normNombre(c.nombres);
+        pid = (n && Object.keys(pac).find(p => normNombre(pac[p].nombre) === n)) || "";
+        if (!pid) {
+          pid = uidPac();
+          pac[pid] = {
+            id: pid,
+            nombre: String(c.nombres || "").trim() || "Sin nombre",
+            creado: d._guardado || new Date().toISOString()
+          };
+          cambioPac = true;
+        }
+        c._paciente = pid;
+        cambioStore = true;
+      }
+
+      if (!grupos.has(pid)) grupos.set(pid, { id: pid, nombre: pac[pid].nombre || "Sin nombre", historias: [] });
+      grupos.get(pid).historias.push({ key: k, data: d });
+    });
+
+    if (cambioStore) saveStore(store);
+    if (cambioPac) savePac(pac);
+
+    return Array.from(grupos.values()).map(g => {
+      const orden = g.historias.slice()
+        .sort((a, b) => String(b.data._guardado || "").localeCompare(String(a.data._guardado || "")));
+      const ult = orden[0] && orden[0].data.campos ? orden[0].data.campos : {};
+      if ((!g.nombre || g.nombre === "Sin nombre") && String(ult.nombres || "").trim()) {
+        g.nombre = String(ult.nombres).trim();
+      }
+      g.historias = orden;
+      return g;
+    }).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  }
+
+  function renderPacientes(){
+    const box = $("#sb-list");
+    if (!box) return;
+    const sc = box.scrollTop;
+    const q = normNombre($("#sb-search").value);
+    const grupos = agrupar();
+    const totalH = grupos.reduce((n, g) => n + g.historias.length, 0);
+
+    $("#sb-count").textContent = grupos.length + " paciente" + (grupos.length === 1 ? "" : "s") +
+      " · " + totalH + " historia" + (totalH === 1 ? "" : "s");
+
+    const visibles = !q ? grupos : grupos.filter(g =>
+      normNombre(g.nombre).includes(q) ||
+      g.historias.some(h => {
+        const c = h.data.campos || {};
+        return normNombre(c.expediente).includes(q) || normNombre(c.nombres).includes(q);
+      })
+    );
+
+    if (!visibles.length) {
+      box.innerHTML = q
+        ? '<p class="sb-empty">Sin coincidencias para “' + esc($("#sb-search").value.trim()) + '”.</p>'
+        : '<p class="sb-empty">Todavía no hay historias guardadas.<br>Empieza con <b>＋ Nueva historia</b>.</p>';
+      return;
+    }
+
+    box.innerHTML = visibles.map(g => {
+      const open = abiertos.has(g.id) || (!!q && visibles.length <= 4);
+      const ult = g.historias[0];
+      const fechaUlt = ult ? fechaCorta((ult.data.campos || {}).fecha_ingreso) || (ult.data._guardado || "").slice(0, 10) : "";
+      const expUlt = ult ? String((ult.data.campos || {}).expediente || "").trim() : "";
+      return `<div class="pac${open ? " open" : ""}">
+        <button class="pac-head" data-toggle="${esc(g.id)}" title="${open ? "Ocultar" : "Ver"} las historias de este paciente">
+          <span class="pac-nm">${esc(g.nombre)}</span>
+          <span class="pac-meta">${g.historias.length} historia${g.historias.length === 1 ? "" : "s"}${fechaUlt ? " · " + esc(fechaUlt) : ""}${expUlt ? " · " + esc(expUlt) : ""}</span>
+        </button>
+        <div class="pac-body">
+          <button class="hist-new" data-new-for="${esc(g.id)}">＋ Nueva historia para este paciente</button>
+          ${g.historias.map(h => {
+            const c = h.data.campos || {};
+            const f = fechaCorta(c.fecha_ingreso) || fechaCorta((h.data._guardado || "").slice(0, 10));
+            const sub = [c.expediente ? "Exp. " + c.expediente : "Sin expediente", c.edad ? c.edad + " años" : ""]
+              .filter(Boolean).join(" · ");
+            return `<div class="hist${h.key === curId() ? " active" : ""}">
+              <button class="hist-main" data-load="${esc(h.key)}" title="Abrir esta historia">
+                <b>${esc(f || "Sin fecha")}</b><span>${esc(sub)}</span>
+              </button>
+              <button class="hist-del" data-del-hist="${esc(h.key)}" title="Eliminar esta historia">✕</button>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+    }).join("");
+
+    box.scrollTop = sc;
+  }
+
+  // Compara solo los campos que existen hoy; ignora los que ya se quitaron del formulario.
+  function snapshot(d){
+    const c = d.campos || {};
+    const campos = {};
+    $$("[data-k]").forEach(el => {
+      const k = el.dataset.k;
+      if (k === "_paciente") return;
+      let v = c[k];
+      if (el.type === "checkbox") v = !!v;
+      else v = v == null ? "" : String(v);
+      campos[k] = v;
+    });
+    return JSON.stringify({
+      campos, signos: d.signos || [],
+      evolucion: d.evolucion || [], enfermeria: d.enfermeria || []
+    });
+  }
+  function sinGuardar(){
+    const id = curId();
+    if (!id) return !!String($('[data-k="nombres"]').value || "").trim();
+    const s = loadStore()[id];
+    if (!s) return !!String($('[data-k="nombres"]').value || "").trim();
+    return snapshot(collect()) !== snapshot(s);
+  }
+  function puedeDescartar(){
+    if (!sinGuardar()) return true;
+    return confirm("La historia que está abierta tiene cambios sin guardar.\n\n¿Descartarlos y continuar?");
+  }
+
+  function nuevaHistoria(pac){
+    if (!puedeDescartar()) return;
+    localStorage.removeItem(DRAFT);
+    $("#sb-search").value = "";
+    blank();
+    if (pac) {
+      $('[data-k="nombres"]').value = pac.nombre && pac.nombre !== "Sin nombre" ? pac.nombre : "";
+      $('[data-k="_paciente"]').value = pac.id;
+      abiertos.add(pac.id);
+    }
+    setStatus("");
+    renderPacientes();
+    toast(pac ? "Nueva historia para " + pac.nombre : "Historia nueva");
+  }
+
+  function abrirHistoria(key){
+    const d = loadStore()[key];
+    if (!d) { toast("Esa historia ya no existe"); renderPacientes(); return; }
+    if (!puedeDescartar()) return;
+    apply(d);
+    localStorage.setItem(DRAFT, JSON.stringify(d));
+    setStatus("");
+    renderPacientes();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast("Historia abierta");
+  }
+
+  function borrarHistoria(key){
+    const d = loadStore()[key] || {};
+    const c = d.campos || {};
+    const cuando = fechaCorta(c.fecha_ingreso);
+    if (!confirm("¿Eliminar la historia de " + (c.nombres || "este paciente") +
+                 (cuando ? " del " + cuando : "") +
+                 "?\n\nTambién se borrarán sus archivos adjuntos. No se puede deshacer.")) return;
+
+    const s = loadStore();
+    delete s[key];
+    saveStore(s);
+
+    dbAll().then(all => Promise.all(
+      (all || []).filter(r => r.historiaId === key).map(r => dbDelete(r.pk))
+    )).catch(() => {});
+
+    const pid = c._paciente;
+    const quedan = Object.keys(s).some(k => ((s[k].campos || {})._paciente || "") === pid);
+    if (pid && !quedan) {
+      const pac = loadPac();
+      delete pac[pid];
+      savePac(pac);
+      abiertos.delete(pid);
+    }
+
+    if (key === curId()) {
+      localStorage.removeItem(DRAFT);
+      blank();
+      setStatus("");
+    }
+    renderPacientes();
+    toast("Historia eliminada");
+  }
+
+  $("#btn-new").addEventListener("click", () => nuevaHistoria(null));
+  $("#sb-search").addEventListener("input", renderPacientes);
+
+  $("#sb-list").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-toggle],[data-new-for],[data-load],[data-del-hist]");
+    if (!t) return;
+    if (t.dataset.toggle) {
+      const id = t.dataset.toggle;
+      if (abiertos.has(id)) abiertos.delete(id); else abiertos.add(id);
+      renderPacientes();
+    } else if (t.dataset.newFor) {
+      const pac = loadPac()[t.dataset.newFor];
+      if (pac) nuevaHistoria(pac);
+    } else if (t.dataset.load) {
+      abrirHistoria(t.dataset.load);
+    } else if (t.dataset.delHist) {
+      borrarHistoria(t.dataset.delHist);
+    }
+  });
+
+  /* ================= Exportar a Word ================= */
+  function fechaCorta(iso){
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+    return m ? m[3] + "/" + m[2] + "/" + m[1] : (iso || "");
+  }
+  function nombreArchivo(c){
+    return (c.expediente || c.nombres || "historia").toString()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9-_]+/g, "-").replace(/^-+|-+$/g, "")
+      .slice(0, 40).toLowerCase() || "historia";
+  }
+
+  $("#btn-word").addEventListener("click", async () => {
+    const d = collect();
+    const c = d.campos || {};
+    const E = (s) => String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/\r?\n/g, "<br>");
+    const V = (k) => E(c[k] || "");
+    const box = (k) => c[k] ? "☒" : "☐";
+
+    // pares: [etiqueta, valor]; cols = 2 (etiqueta|valor) o 4 (dos pares por fila)
+    const tabla = (pares, cols) => {
+      let out = "";
+      for (let i = 0; i < pares.length; i += (cols === 4 ? 2 : 1)) {
+        const a = pares[i], b = pares[i + 1];
+        out += "<tr><td class='lbl'>" + E(a[0]) + "</td><td>" + a[1] + "</td>";
+        if (cols === 4) out += b ? "<td class='lbl'>" + E(b[0]) + "</td><td>" + b[1] + "</td>"
+                                 : "<td class='lbl'></td><td></td>";
+        out += "</tr>";
+      }
+      return "<table>" + out + "</table>";
+    };
+
+    const filasSV = (d.signos && d.signos.length ? d.signos : [{}]).map(r =>
+      "<tr><td>" + E(fechaCorta(r.fecha)) + "</td><td>" + E(r.hora) + "</td><td>" + E(r.ta) +
+      "</td><td>" + E(r.pulso) + "</td><td>" + E(r.resp) + "</td><td>" + E(r.temp) +
+      "</td><td>" + E(r.spo2) + "</td><td>" + E(r.peso) + "</td><td>" + E(r.firma) + "</td></tr>").join("");
+
+    const filasEvo = (d.evolucion && d.evolucion.length ? d.evolucion : [{}]).map(r =>
+      "<tr><td>" + E(fechaCorta(r.fecha)) + "</td><td>" + E(r.hora) + "</td><td>" + E(r.nota) +
+      "</td><td>" + E(r.responsable) + "</td></tr>").join("");
+
+    const filasEnf = (d.enfermeria && d.enfermeria.length ? d.enfermeria : [{}]).map(r =>
+      "<tr><td>" + E(fechaCorta(r.fecha)) + "</td><td>" + E(r.turno) + "</td><td>" + E(r.reporte) +
+      "</td><td>" + E(r.enfermera) + "</td></tr>").join("");
+
+    let adjuntos = [];
+    try {
+      adjuntos = ((await dbAll()) || [])
+        .filter(r => r.historiaId === curId())
+        .map(r => r.name);
+    } catch(e) {}
+
+    const html =
+`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<title>Historia Clínica ${E(c.expediente || "")}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>
+@page WordSection1 { size:21.0cm 29.7cm; margin:1.5cm; }
+div.WordSection1 { page:WordSection1; }
+body { font-family:Calibri,Arial,sans-serif; font-size:10.5pt; color:#12232e; }
+h1 { font-size:15pt; margin:0 0 1pt; }
+.sub { font-size:8.5pt; color:#5b6b75; margin:0; line-height:1.35; }
+h2 { font-size:10pt; color:#0b6b6b; border-bottom:1px solid #0b6b6b; padding-bottom:2pt; margin:13pt 0 5pt; letter-spacing:.4pt; }
+h3 { font-size:8.5pt; color:#4a5b66; margin:10pt 0 4pt; letter-spacing:.4pt; }
+table { border-collapse:collapse; width:100%; }
+td, th { border:1px solid #c3d0d6; padding:3pt 5pt; vertical-align:top; font-size:9.5pt; }
+th { background:#eef4f5; font-size:8pt; text-align:left; letter-spacing:.4pt; }
+td.lbl { width:24%; background:#f7fafa; color:#4a5b66; font-size:8.5pt; }
+table.meta, table.meta td { border:0; padding:0; }
+table.sign td { border:0; border-top:1px solid #444; padding-top:3pt; font-size:8.5pt; text-align:center; }
+.checks { font-size:9.5pt; margin:5pt 0 0; line-height:1.7; }
+.pie { margin-top:12pt; font-size:7.5pt; color:#6b7a84; border-top:1px solid #d6e0e4; padding-top:3pt; }
+</style></head>
+<body><div class="WordSection1">
+
+<table class="meta">
+<tr><td>
+  <h1>Hospital de Clínicas San Jorge, S.A.</h1>
+  <p class="sub">Historia Clínica · Tel. 762-1841</p>
+</td></tr>
+<tr><td style="text-align:right; padding-top:4pt; border-top:1px solid #c3d0d6">
+  <p class="sub">Historia N° <b>${E(c.expediente || "")}</b> &nbsp;&nbsp;·&nbsp;&nbsp; Fecha <b>${E(fechaCorta(c.fecha_ingreso))}</b></p>
+</td></tr>
+</table>
+
+<h2>I. Datos generales</h2>
+${tabla([
+  ["Nombre y apellido", V("nombres")],
+  ["Edad", V("edad")],
+  ["Fecha de nacimiento", E(fechaCorta(c.fecha_nac))],
+  ["Profesión", V("ocupacion")],
+  ["Empresa", V("empresa")],
+  ["Cargo propuesto", V("cargo")]
+], 4)}
+
+<h2>II. Antecedentes patológicos (médicos) – quirúrgicos – accidentes</h2>
+${tabla([["Antecedentes", V("ant_patologicos")]], 2)}
+<h3>HÁBITOS</h3>
+${tabla([
+  ["Cigarrillos", V("tabaco")],
+  ["N.° al día", V("tabaco_n")],
+  ["Edad en que comenzó", V("tabaco_edad")],
+  ["Alcohol", V("alcohol")],
+  ["Otras drogas", V("drogas")],
+  ["Cuál", V("drogas_cual")],
+  ["Sueño: horas diarias", V("sueno")],
+  ["Sueño", V("sueno_ritmo")],
+  ["Hobby", V("hobby")],
+  ["Actividad física – deportes", V("actividad")],
+  ["Dieta", V("dieta")]
+], 4)}
+
+<h2>III. Antecedentes familiares</h2>
+${tabla([
+  ["Padre", V("fam_padre")],
+  ["Madre", V("fam_madre")],
+  ["Hermanos / as", V("fam_hermanos")],
+  ["Consanguíneos (abuelos, tíos, primos)", V("fam_consanguineos")]
+], 4)}
+<p class="checks">${[
+  ["f_pulmonar", "Pulmonares"], ["f_cancer", "Cáncer"], ["f_dm", "Diabetes"],
+  ["f_cardio", "Cardiopatía"], ["f_hta", "Hipertensión"], ["f_malf", "Malformaciones congénitas"],
+  ["f_osteo", "E. osteomusculares"], ["f_epilepsia", "Epilepsia"], ["f_lues", "Lues"],
+  ["f_atopia", "Atopia"], ["f_farmaco", "Farmacodependencia"], ["f_mental", "Trastornos mentales"],
+  ["f_otros", "Otras"]
+].map(p => box(p[0]) + "&nbsp;" + p[1]).join("&nbsp;&nbsp;&nbsp;&nbsp;")}</p>
+
+<h2>IV. Antecedentes ocupacionales</h2>
+${tabla([["Antecedentes", V("ocupacional")]], 2)}
+
+<h2>V. Signos vitales</h2>
+<table>
+<tr>
+  <th style="width:11%">Fecha</th><th style="width:8%">Hora</th><th style="width:10%">T/A (mmHg)</th>
+  <th style="width:9%">Pulso (x')</th><th style="width:9%">Resp. (x')</th><th style="width:9%">Temp. (°C)</th>
+  <th style="width:9%">SpO₂ (%)</th><th style="width:9%">Peso (kg)</th><th>Firma</th>
+</tr>
+${filasSV}
+</table>
+
+<h2>VI. Evolución / notas médicas</h2>
+<table>
+<tr><th style="width:13%">Fecha</th><th style="width:9%">Hora</th><th>Nota de evolución</th><th style="width:22%">Responsable</th></tr>
+${filasEvo}
+</table>
+
+<h2>VII. Reporte de enfermería</h2>
+<table>
+<tr><th style="width:13%">Fecha</th><th style="width:12%">Turno</th><th>Reporte</th><th style="width:22%">Enfermera/o</th></tr>
+${filasEnf}
+</table>
+
+<table class="sign" style="margin-top:28pt"><tr>
+  <td style="width:50%">${E(c.medico || "")}</td>
+  <td style="width:50%">${E(c.recibido_por || "")}</td>
+</tr><tr>
+  <td>Médico responsable · Firma y sello</td>
+  <td>Paciente / responsable · Firma</td>
+</tr></table>
+
+<p class="pie">
+  Historia Clínica · Hospital de Clínicas San Jorge, S.A.${c.colegiacion ? " · Colegiación " + E(c.colegiacion) : ""}${adjuntos.length ? " · Adjuntos: " + E(adjuntos.join(", ")) : ""} · Generado el ${new Date().toLocaleDateString("es-HN")} ${new Date().toLocaleTimeString("es-HN", { hour: "2-digit", minute: "2-digit" })}
+</p>
+
+</div></body></html>`;
+
+    const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "historia-" + nombreArchivo(c) + ".doc";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+    toast("Documento Word descargado");
+  });
+
+  /* ================= Arranque ================= */
+  blank();
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem(DRAFT) || "null"); } catch(e){}
+  if (draft) {
+    apply(draft);
+    if (draft._modificado) setStatus("Borrador recuperado");
+  }
+  ["sv","evo","enf"].forEach(k => {
+    if (!$(TABLE_OF[k] + " tbody").rows.length) addRow(k);
+  });
+  renderAlerts();
+  refreshAttachments();
+  renderPacientes();
+})();
+</script>
+</body>
+</html>

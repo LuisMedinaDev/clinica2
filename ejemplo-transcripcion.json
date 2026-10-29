@@ -1,0 +1,85 @@
+{
+  "_v": 1,
+  "_nota": "BORRADOR DE TRANSCRIPCIÓN — NO VALIDADO. Contiene solo los datos legibles en las 5 fotos. Los campos con [?] son dudosos y deben cotejarse contra el papel original. El nombre del paciente quedó vacío porque es ilegible en la foto.",
+
+  "campos": {
+    "_id": "hc-hcsj-transcripcion-0001",
+
+    "expediente": "",
+    "fecha_ingreso": "2026-10-19",
+
+    "nombres": "",
+    "edad": "57",
+    "fecha_nac": "1969-07-06",
+    "ocupacion": "",
+    "empresa": "",
+    "cargo": "",
+
+    "ant_patologicos": "Niega alergias. Niega quirúrgicos. Niega hospitalización. [?] Resto ilegible.",
+
+    "tabaco": "No",
+    "tabaco_n": "",
+    "tabaco_edad": "",
+    "alcohol": "No",
+    "drogas": "No",
+    "drogas_cual": "",
+    "hobby": "",
+    "sueno": "",
+    "sueno_ritmo": "",
+    "actividad": "",
+    "dieta": "",
+
+    "fam_padre": "",
+    "fam_madre": "",
+    "fam_hermanos": "",
+    "fam_consanguineos": "",
+
+    "ocupacional": "Niega alergias. Niega antecedentes patológicos de importancia. Niega quirúrgicos / traumatológicos.",
+
+    "medico": "[?]",
+    "colegiacion": ""
+  },
+
+  "signos": [
+    {
+      "fecha": "2026-10-19",
+      "hora": "10:00",
+      "ta": "140/90",
+      "pulso": "85",
+      "resp": "22 [?]",
+      "temp": "",
+      "spo2": "",
+      "peso": "",
+      "firma": "Enf. Jenny R."
+    },
+    {
+      "fecha": "2026-10-19",
+      "hora": "15:00",
+      "ta": "130/80",
+      "pulso": "85",
+      "resp": "",
+      "temp": "",
+      "spo2": "",
+      "peso": "",
+      "firma": "Enf. Jenny R."
+    }
+  ],
+
+  "evolucion": [
+    {
+      "fecha": "2026-10-19",
+      "hora": "",
+      "nota": "[?] Manuscrito ilegible en la foto. Ver hoja 4 (Evolución) del expediente físico.",
+      "responsable": ""
+    }
+  ],
+
+  "enfermeria": [
+    {
+      "fecha": "2026-10-10",
+      "turno": "",
+      "reporte": "Paciente femenina de 47 años [?], procedente de comunidad ilegible, traída por presentar dolor de 3 días de evolución [?]. Se recibe con diagnóstico de [?]. Se indica Solución 0.9% 500 ml EV a 40 gotas/min. SV: TA 140/90, FC 85 x', FR 22 x' [?], T 37.5 °C [?]. ATENCIÓN: la fecha escrita en la hoja es 10/10/26 y en la hoja 1 dice 19/10/2026; los años de edad también difieren (47 vs 57).",
+      "enfermera": "Jenny R."
+    }
+  ]
+}
